@@ -14,13 +14,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: 'main-repo'
+          fetch-depth: 0  # Required for reviewdog (.git must be present)
 
       - name: Checkout SUSE style guide
         uses: actions/checkout@v4
         with:
           repository: 'openSUSE/suse-vale-styleguide'
           path: 'suse-styles'
-     
+
       - name: Install asciidoctor
         run: |
           sudo apt-get update
@@ -43,3 +44,11 @@ jobs:
         uses: errata-ai/vale-action@v2
         with:
           files: 'main-repo/docs'
+          version: latest
+          debug: false
+          reporter: github-pr-annotations
+          fail_on_error: false
+          level: error
+          filter_mode: added
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
