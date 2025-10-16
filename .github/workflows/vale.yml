@@ -31,7 +31,7 @@ jobs:
         run: |
           cat <<EOF > .vale.ini
           StylesPath = suse-styles
-          MinAlertLevel = info # Set this to info
+          MinAlertLevel = suggestion # This value is correct
           
           [*.adoc]
           BasedOnStyles = common, asciidoc
@@ -48,7 +48,7 @@ jobs:
           debug: false
           reporter: github-pr-annotations
           fail_on_error: false
-          level: info # Set this to info
+          level: suggestion # Set this to suggestion
           filter_mode: added
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
