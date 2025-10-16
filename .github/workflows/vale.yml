@@ -9,12 +9,12 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout docs repository
         uses: actions/checkout@v4
         with:
-          path: 'main-repo'
-          fetch-depth: 0  # Required for reviewdog (.git must be present)
+          fetch-depth: 0  # important for Vale + reviewdog to find .git
 
       - name: Checkout SUSE style guide
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
       - name: Run Vale
         uses: errata-ai/vale-action@v2
         with:
-          files: 'main-repo/docs'
+          files: 'docs'       # relative to root checkout
           version: latest
           debug: false
           reporter: github-pr-annotations
