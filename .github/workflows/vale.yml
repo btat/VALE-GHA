@@ -1,0 +1,39 @@
+name: Vale Linting
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**/*.adoc'
+      - 'docs/**/*.md'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout docs repository
+        uses: actions/checkout@v4
+        with:
+          path: 'main-repo'
+
+      - name: Checkout SUSE style guide
+        uses: actions/checkout@v4
+        with:
+          repository: 'openSUSE/suse-vale-styleguide'
+          path: 'suse-styles'
+
+      - name: Configure Vale
+        run: |
+          echo "StylesPath = ../suse-styles" >> .vale.ini
+          echo "MinAlertLevel = warning" >> .vale.ini
+          echo "" >> .vale.ini
+          echo "[*.adoc]" >> .vale.ini
+          echo "BasedOnStyles = common, asciidoc" >> .vale.ini
+          echo "" >> .vale.ini
+          echo "[*.md]" >> .vale.ini
+          echo "BasedOnStyles = common" >> .vale.ini
+        working-directory: 'main-repo'
+
+      - name: Run Vale
+        uses: errata-ai/vale-action@v2
+        with:
+          files: 'main-repo/docs'

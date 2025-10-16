@@ -1,0 +1,3 @@
+= Title
+
+This document was written to test the Vale linter.
