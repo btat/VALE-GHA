@@ -20,8 +20,13 @@ jobs:
         with:
           repository: 'openSUSE/suse-vale-styleguide'
           path: 'suse-styles'
+     
+      - name: Install asciidoctor
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y asciidoctor
 
-      - name: Configure Vale
+      - name: Configure .vale.ini
         run: |
           cat <<EOF > .vale.ini
           StylesPath = suse-styles
