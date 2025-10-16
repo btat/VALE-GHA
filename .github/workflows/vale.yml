@@ -14,7 +14,7 @@ jobs:
       - name: Checkout docs repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # important for Vale + reviewdog to find .git
+          fetch-depth: 0
 
       - name: Checkout SUSE style guide
         uses: actions/checkout@v4
@@ -31,8 +31,8 @@ jobs:
         run: |
           cat <<EOF > .vale.ini
           StylesPath = suse-styles
-          MinAlertLevel = warning
-
+          MinAlertLevel = info # Set this to info
+          
           [*.adoc]
           BasedOnStyles = common, asciidoc
 
@@ -43,12 +43,12 @@ jobs:
       - name: Run Vale
         uses: errata-ai/vale-action@v2
         with:
-          files: 'docs'       # relative to root checkout
+          files: 'docs'
           version: latest
           debug: false
           reporter: github-pr-annotations
           fail_on_error: false
-          level: error
+          level: info # Set this to info
           filter_mode: added
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
