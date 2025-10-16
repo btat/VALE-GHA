@@ -23,18 +23,18 @@ jobs:
 
       - name: Configure Vale
         run: |
-          echo "StylesPath = ../suse-styles" >> .vale.ini
-          echo "MinAlertLevel = warning" >> .vale.ini
-          echo "" >> .vale.ini
-          echo "[*.adoc]" >> .vale.ini
-          echo "BasedOnStyles = common, asciidoc" >> .vale.ini
-          echo "" >> .vale.ini
-          echo "[*.md]" >> .vale.ini
-          echo "BasedOnStyles = common" >> .vale.ini
-        working-directory: 'main-repo'
+          cat <<EOF > .vale.ini
+          StylesPath = suse-styles
+          MinAlertLevel = warning
+
+          [*.adoc]
+          BasedOnStyles = common, asciidoc
+
+          [*.md]
+          BasedOnStyles = common
+          EOF
 
       - name: Run Vale
         uses: errata-ai/vale-action@v2
         with:
           files: 'main-repo/docs'
-          config: 'main-repo/.vale.ini'  # The new, critical line
