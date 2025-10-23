@@ -5,6 +5,7 @@ on:
     paths:
       - 'docs/**/*.adoc'
       - 'docs/**/*.md'
+      - 'docs/**/*.txt' 
 
 jobs:
   lint:
@@ -43,12 +44,15 @@ jobs:
           # Dynamically create the .vale.ini file in the root directory
           cat <<EOF > .vale.ini
           StylesPath = suse-styles
-          MinAlertLevel = suggestion # Show info, warning, and error
+          MinAlertLevel = warning # Set to WARNING to confirm rule errors are detected
           
           [*.adoc]
           BasedOnStyles = common, asciidoc
 
           [*.md]
+          BasedOnStyles = common
+
+          [*.txt] # TEMPORARY: Adding config for .txt files
           BasedOnStyles = common
           EOF
 
@@ -61,7 +65,6 @@ jobs:
           VALE_OUTPUT=$(/usr/local/bin/vale --output=JSON --no-exit docs)
           
           # CRITICAL FIX: Check if the 'Results' array is not empty before running jq and reviewdog.
-          # This avoids the "Cannot iterate over null" error.
           if echo "$VALE_OUTPUT" | jq -e '.Results | length > 0' > /dev/null; then
             echo "Vale found issues. Sending results to Reviewdog..."
             
@@ -70,7 +73,7 @@ jobs:
             | /usr/local/bin/reviewdog -f=rdjsonl \
               -name="Vale Linter" \
               -reporter=github-pr-review \
-              -level=suggestion \
+              -level=warning # Set level to WARNING to match MinAlertLevel
               -filter-mode=added \
               -fail-on-error=false
           else
