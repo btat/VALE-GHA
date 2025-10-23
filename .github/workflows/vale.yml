@@ -30,7 +30,7 @@ jobs:
           sudo apt-get install -y asciidoctor jq
 
           # Install Vale (latest Linux binary)
-          VALE_VERSION="3.12.0" # Use a specific version for stability
+          VALE_VERSION="3.12.0" 
           VALE_URL="https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
           curl -L "${VALE_URL}" | sudo tar -xz -C /usr/local/bin/
 
@@ -39,23 +39,22 @@ jobs:
           REVIEW_URL="https://github.com/reviewdog/reviewdog/releases/download/v${REVIEW_VERSION}/reviewdog_${REVIEW_VERSION}_Linux_x86_64.tar.gz"
           curl -L "${REVIEW_URL}" | sudo tar -xz -C /usr/local/bin/
 
-      - name: Copy Dictionary for Spelling Rule Fix
+      - name: Configure .vale.ini and Set Styles
         run: |
-          # CRITICAL FIX: Copy the 'config' folder to the root directory.
-          # The Spelling.yml rule expects the dictionary (config/dictionaries) 
-          # to be relative to the style guide's root, which is now the CWD.
-          cp -r suse-styles/config .
+          # CRITICAL FIX: Move ALL required folders (styles and config) to the root directory (.).
+          # This guarantees Vale can find them, solving the persistent path issues.
+          mv suse-styles/common .
+          mv suse-styles/asciidoc .
+          cp -r suse-styles/config . # Copy the config/dictionaries folder
 
-      - name: Configure .vale.ini
-        run: |
           # Dynamically create the .vale.ini file in the root directory
           cat <<EOF > .vale.ini
-          StylesPath = suse-styles # Set StylesPath to the original cloned directory
+          StylesPath = . # Tell Vale to look in the Current Working Directory (where we moved the folders)
           MinAlertLevel = warning
-          
+                    
           [*.adoc]
           BasedOnStyles = common, asciidoc
-
+                    
           [*.md]
           BasedOnStyles = common
 
@@ -65,14 +64,12 @@ jobs:
 
       - name: Run Vale and Report to GitHub PR
         run: |
-          # Ensure Vale can see the configuration and styles
-          # This command is needed to load the styles when StylesPath is set to a directory.
-          vale sync
+          # We no longer need 'vale sync' as the styles were moved and configured above.
           
           # Execute Vale and store output in a variable
           VALE_OUTPUT=$(/usr/local/bin/vale --output=JSON --no-exit docs)
           
-          # CRITICAL FIX: Check if the 'Results' array is not empty before running jq and reviewdog.
+          # Check if the 'Results' array is not empty before running jq and reviewdog.
           if echo "$VALE_OUTPUT" | jq -e '.Results | length > 0' > /dev/null; then
             echo "Vale found issues. Sending results to Reviewdog..."
             
@@ -83,7 +80,7 @@ jobs:
               -reporter=github-pr-review \
               -level=warning # Set level to WARNING to match MinAlertLevel
               -filter-mode=added \
-              -fail-on-error=false
+              -fail-on-error: true
           else
             echo "Vale found no issues. Skipping reviewdog reporting."
           fi
