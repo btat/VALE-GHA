@@ -39,15 +39,20 @@ jobs:
           REVIEW_URL="https://github.com/reviewdog/reviewdog/releases/download/v${REVIEW_VERSION}/reviewdog_${REVIEW_VERSION}_Linux_x86_64.tar.gz"
           curl -L "${REVIEW_URL}" | sudo tar -xz -C /usr/local/bin/
 
-      - name: Configure .vale.ini
+      - name: Configure .vale.ini and Move Styles
         run: |
+          # CRITICAL FIX: Move the required style folders to the root directory
+          # This ensures Vale can reliably find them regardless of path complexities.
+          mv suse-styles/common .
+          mv suse-styles/asciidoc .
+
           # Dynamically create the .vale.ini file in the root directory
           cat <<EOF > .vale.ini
-          StylesPath = suse-styles # Use the simpler relative path
+          StylesPath = . # Look for styles in the current working directory
           MinAlertLevel = warning
           
           [*.adoc]
-          BasedOnStyles = common, asciidoc # Use the actual directory names
+          BasedOnStyles = common, asciidoc
 
           [*.md]
           BasedOnStyles = common
@@ -58,8 +63,8 @@ jobs:
 
       - name: Run Vale and Report to GitHub PR
         run: |
-          # Ensure Vale can see the configuration and styles
-          vale sync
+          # Vale will find styles because they were moved to the root (StylesPath = .)
+          # We no longer need 'vale sync' as styles are locally available and configured.
           
           # Execute Vale and store output in a variable
           VALE_OUTPUT=$(/usr/local/bin/vale --output=JSON --no-exit docs)
