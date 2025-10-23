@@ -11,27 +11,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout docs repository
+      - name: Checkout Docs Repository (Main Repo)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Checkout SUSE style guide
+      - name: Checkout SUSE Style Guide
         uses: actions/checkout@v4
         with:
           repository: 'openSUSE/suse-vale-styleguide'
           path: 'suse-styles'
 
-      - name: Install asciidoctor
+      - name: Install Dependencies (Vale, Reviewdog, and Asciidoctor)
         run: |
+          # Update and install Asciidoctor (for ADOC parsing)
           sudo apt-get update
           sudo apt-get install -y asciidoctor
 
+          # Install Vale (latest Linux binary)
+          VALE_VERSION="3.12.0" # Use a specific version for stability
+          VALE_URL="https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          curl -L "${VALE_URL}" | sudo tar -xz -C /usr/local/bin/
+
+          # Install Reviewdog (for PR annotations)
+          REVIEW_VERSION="0.17.0"
+          REVIEW_URL="https://github.com/reviewdog/reviewdog/releases/download/v${REVIEW_VERSION}/reviewdog_${REVIEW_VERSION}_Linux_x86_64.tar.gz"
+          curl -L "${REVIEW_URL}" | sudo tar -xz -C /usr/local/bin/
+
       - name: Configure .vale.ini
         run: |
+          # Dynamically create the .vale.ini file in the root directory
           cat <<EOF > .vale.ini
           StylesPath = suse-styles
-          MinAlertLevel = suggestion # This value is correct
+          MinAlertLevel = suggestion # Show info, warning, and error
           
           [*.adoc]
           BasedOnStyles = common, asciidoc
@@ -40,15 +52,18 @@ jobs:
           BasedOnStyles = common
           EOF
 
-      - name: Run Vale
-        uses: errata-ai/vale-action@v2
-        with:
-          files: 'docs'
-          version: latest
-          debug: false
-          reporter: github-pr-annotations
-          fail_on_error: false
-          level: suggestion # Set this to suggestion
-          filter_mode: added
+      - name: Run Vale and Report to GitHub PR
+        run: |
+          # Ensure Vale can see the configuration and styles
+          vale sync
+          
+          # Execute Vale and pipe the JSON output through Reviewdog for PR annotations
+          /usr/local/bin/vale --output=JSON --no-exit docs \
+          | /usr/local/bin/reviewdog -f=json \
+            -name="Vale Linter" \
+            -reporter=github-pr-review \
+            -level=suggestion \
+            -filter-mode=added \
+            -fail-on-error=false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
