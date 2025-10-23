@@ -57,9 +57,9 @@ jobs:
           # Ensure Vale can see the configuration and styles
           vale sync
           
-          # Execute Vale and pipe the JSON output through Reviewdog for PR annotations
+          # Execute Vale and pipe the RDJSON output through Reviewdog for PR annotations
           /usr/local/bin/vale --output=JSON --no-exit docs \
-          | /usr/local/bin/reviewdog -f=json \
+          | /usr/local/bin/reviewdog -f=rdjson \
             -name="Vale Linter" \
             -reporter=github-pr-review \
             -level=suggestion \
@@ -67,4 +67,4 @@ jobs:
             -fail-on-error=false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }} # CRITICAL FIX: Pass token to Reviewdog
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
