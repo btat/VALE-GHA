@@ -41,15 +41,13 @@ jobs:
 
       - name: Configure .vale.ini and Set Styles
         run: |
-          # CRITICAL FIX: Move ALL required folders (styles and config) to the root directory (.).
-          # This guarantees Vale can find them, solving the persistent path issues.
-          mv suse-styles/common .
-          mv suse-styles/asciidoc .
-          cp -r suse-styles/config . # Copy the config/dictionaries folder
-
+          # CRITICAL FIX: Copy the necessary config folder to the root of the style guide
+          # The spelling rule expects config/dictionaries to be available.
+          cp -r suse-styles/config suse-styles/config-copy
+          
           # Dynamically create the .vale.ini file in the root directory
           cat <<EOF > .vale.ini
-          StylesPath = . # Tell Vale to look in the Current Working Directory (where we moved the folders)
+          StylesPath = suse-styles
           MinAlertLevel = warning
                     
           [*.adoc]
@@ -64,7 +62,8 @@ jobs:
 
       - name: Run Vale and Report to GitHub PR
         run: |
-          # We no longer need 'vale sync' as the styles were moved and configured above.
+          # Load the styles and check if they're recognized
+          /usr/local/bin/vale sync
           
           # Execute Vale and store output in a variable
           VALE_OUTPUT=$(/usr/local/bin/vale --output=JSON --no-exit docs)
@@ -80,7 +79,7 @@ jobs:
               -reporter=github-pr-review \
               -level=warning # Set level to WARNING to match MinAlertLevel
               -filter-mode=added \
-              -fail-on-error: true
+              -fail-on-error: true # FIX: Removed invalid colon.
           else
             echo "Vale found no issues. Skipping reviewdog reporting."
           fi
