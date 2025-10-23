@@ -24,9 +24,9 @@ jobs:
 
       - name: Install Dependencies (Vale, Reviewdog, and Asciidoctor)
         run: |
-          # Update and install Asciidoctor (for ADOC parsing)
+          # Update and install Asciidoctor (for ADOC parsing) and jq
           sudo apt-get update
-          sudo apt-get install -y asciidoctor
+          sudo apt-get install -y asciidoctor jq # ADDED: jq
 
           # Install Vale (latest Linux binary)
           VALE_VERSION="3.12.0" # Use a specific version for stability
@@ -57,9 +57,10 @@ jobs:
           # Ensure Vale can see the configuration and styles
           vale sync
           
-          # Execute Vale and pipe the RDJSON output through Reviewdog for PR annotations
+          # Execute Vale, pipe JSON to jq for formatting, then pipe to Reviewdog
           /usr/local/bin/vale --output=JSON --no-exit docs \
-          | /usr/local/bin/reviewdog -f=rdjson \
+          | jq -c '.Results[] | . | {message, location: {path: .Location.Path, range: {start: {line: .Location.Span.Start.Line, column: .Location.Span.Start.Column}}}, severity: .Level}' \
+          | /usr/local/bin/reviewdog -f=rdjsonl \
             -name="Vale Linter" \
             -reporter=github-pr-review \
             -level=suggestion \
