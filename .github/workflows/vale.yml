@@ -39,16 +39,18 @@ jobs:
           REVIEW_URL="https://github.com/reviewdog/reviewdog/releases/download/v${REVIEW_VERSION}/reviewdog_${REVIEW_VERSION}_Linux_x86_64.tar.gz"
           curl -L "${REVIEW_URL}" | sudo tar -xz -C /usr/local/bin/
 
-      - name: Configure .vale.ini and Move Styles
+      - name: Copy Dictionary for Spelling Rule Fix
         run: |
-          # CRITICAL FIX: Move the required style folders to the root directory
-          # This ensures Vale can reliably find them regardless of path complexities.
-          mv suse-styles/common .
-          mv suse-styles/asciidoc .
+          # CRITICAL FIX: Copy the 'config' folder to the root directory.
+          # The Spelling.yml rule expects the dictionary (config/dictionaries) 
+          # to be relative to the style guide's root, which is now the CWD.
+          cp -r suse-styles/config .
 
+      - name: Configure .vale.ini
+        run: |
           # Dynamically create the .vale.ini file in the root directory
           cat <<EOF > .vale.ini
-          StylesPath = . # Look for styles in the current working directory
+          StylesPath = suse-styles # Set StylesPath to the original cloned directory
           MinAlertLevel = warning
           
           [*.adoc]
@@ -63,8 +65,9 @@ jobs:
 
       - name: Run Vale and Report to GitHub PR
         run: |
-          # Vale will find styles because they were moved to the root (StylesPath = .)
-          # We no longer need 'vale sync' as styles are locally available and configured.
+          # Ensure Vale can see the configuration and styles
+          # This command is needed to load the styles when StylesPath is set to a directory.
+          vale sync
           
           # Execute Vale and store output in a variable
           VALE_OUTPUT=$(/usr/local/bin/vale --output=JSON --no-exit docs)
